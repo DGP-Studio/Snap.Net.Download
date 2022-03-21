@@ -1,6 +1,4 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
 using System.Threading;
@@ -17,25 +15,21 @@ namespace Snap.Net.Download
         // HttpClient is intended to be instantiated once per application, rather than per-use.
         private static readonly Lazy<HttpClient> LazyHttpClient = new(() => new() { Timeout = Timeout.InfiniteTimeSpan });
 
-        public delegate void ProgressChangedHandler(long? totalFileSize, long totalBytesDownloaded, double? progressPercentage);
-
-        public event ProgressChangedHandler? ProgressChanged;
-
-        public Downloader(Uri uri, string destinationFilePath) 
+        public Downloader(Uri uri, string destinationFilePath)
         {
-            this.downloadUrl = uri;
+            downloadUrl = uri;
             this.destinationFilePath = destinationFilePath;
         }
 
-        public async Task DownloadAsync()
+        public async Task DownloadAsync(IProgress<DownloadInfomation> progress)
         {
             using (HttpResponseMessage response = await LazyHttpClient.Value.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
             {
-                await DownloadFileFromHttpResponseMessageAsync(response);
+                await DownloadFileFromHttpResponseMessageAsync(response, progress);
             }
         }
 
-        private async Task DownloadFileFromHttpResponseMessageAsync(HttpResponseMessage response)
+        private async Task DownloadFileFromHttpResponseMessageAsync(HttpResponseMessage response, IProgress<DownloadInfomation> progress)
         {
             response.EnsureSuccessStatusCode();
 
@@ -43,11 +37,11 @@ namespace Snap.Net.Download
 
             using (Stream contentStream = await response.Content.ReadAsStreamAsync())
             {
-                await ProcessContentStream(contentStream, totalBytes);
+                await ProcessContentStream(contentStream, totalBytes, progress);
             }
         }
-        
-        private async Task ProcessContentStream(Stream contentStream, long? totalDownloadSize)
+
+        private async Task ProcessContentStream(Stream contentStream, long? totalDownloadSize, IProgress<DownloadInfomation> progress)
         {
             long totalBytesRead = 0L;
             long readCount = 0L;
@@ -62,7 +56,7 @@ namespace Snap.Net.Download
                     if (bytesRead == 0)
                     {
                         isMoreToRead = false;
-                        TriggerProgressChanged(totalDownloadSize, totalBytesRead);
+                        progress.Report(new(totalBytesRead, totalDownloadSize ?? 0));
                         continue;
                     }
 
@@ -73,27 +67,11 @@ namespace Snap.Net.Download
 
                     if (readCount % 8 == 0)
                     {
-                        TriggerProgressChanged(totalDownloadSize, totalBytesRead);
+                        progress.Report(new(totalBytesRead, totalDownloadSize ?? 0));
                     }
                 }
                 while (isMoreToRead);
             }
-        }
-
-        private void TriggerProgressChanged(long? totalDownloadSize, long totalBytesRead)
-        {
-            if (ProgressChanged is null)
-            {
-                return;
-            }
-
-            double? progressPercentage = null;
-            if (totalDownloadSize is not null)
-            {
-                progressPercentage = Math.Round((double)totalBytesRead / totalDownloadSize.Value, 2);
-            }
-
-            ProgressChanged.Invoke(totalDownloadSize, totalBytesRead, progressPercentage);
         }
     }
 }
