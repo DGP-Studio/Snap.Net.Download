@@ -9,8 +9,16 @@
         }
         public long BytesReceived { get; }
         public long TotalSize { get; }
-        public double Percent => (double)BytesReceived / TotalSize;
-        public bool IsDownloading => Percent < 1;
+        public double Percent
+        {
+            get => (double)BytesReceived / TotalSize;
+        }
+
+        public bool IsDownloading
+        {
+            get => Percent < 1;
+        }
+
         public override string ToString()
         {
             return $@"{Percent:P2} - {BytesReceived * 1.0 / 1024 / 1024:F2}MB / {TotalSize * 1.0 / 1024 / 1024:F2}MB";
