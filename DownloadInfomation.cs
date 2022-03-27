@@ -4,24 +4,24 @@
     {
         public DownloadInfomation(long bytesReceived, long totalSize)
         {
-            BytesReceived = bytesReceived;
-            TotalSize = totalSize;
+            this.BytesReceived = bytesReceived;
+            this.TotalSize = totalSize;
         }
         public long BytesReceived { get; }
         public long TotalSize { get; }
         public double Percent
         {
-            get => (double)BytesReceived / TotalSize;
+            get => (double)this.BytesReceived / this.TotalSize;
         }
 
         public bool IsDownloading
         {
-            get => Percent < 1;
+            get => this.Percent < 1;
         }
 
         public override string ToString()
         {
-            return $@"{Percent:P2} - {BytesReceived * 1.0 / 1024 / 1024:F2}MB / {TotalSize * 1.0 / 1024 / 1024:F2}MB";
+            return $@"{this.Percent:P2} - {this.BytesReceived * 1.0 / 1024 / 1024:F2}MB / {this.TotalSize * 1.0 / 1024 / 1024:F2}MB";
         }
     }
 }

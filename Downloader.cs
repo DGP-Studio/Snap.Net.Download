@@ -17,15 +17,15 @@ namespace Snap.Net.Download
 
         public Downloader(Uri uri, string destinationFilePath)
         {
-            downloadUrl = uri;
+            this.downloadUrl = uri;
             this.destinationFilePath = destinationFilePath;
         }
 
         public async Task DownloadAsync(IProgress<DownloadInfomation> progress)
         {
-            using (HttpResponseMessage response = await LazyHttpClient.Value.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
+            using (HttpResponseMessage response = await LazyHttpClient.Value.GetAsync(this.downloadUrl, HttpCompletionOption.ResponseHeadersRead))
             {
-                await DownloadFileFromHttpResponseMessageAsync(response, progress);
+                await this.DownloadFileFromHttpResponseMessageAsync(response, progress);
             }
         }
 
@@ -37,7 +37,7 @@ namespace Snap.Net.Download
 
             using (Stream contentStream = await response.Content.ReadAsStreamAsync())
             {
-                await ProcessContentStream(contentStream, totalBytes, progress);
+                await this.ProcessContentStream(contentStream, totalBytes, progress);
             }
         }
 
@@ -48,7 +48,7 @@ namespace Snap.Net.Download
             byte[] buffer = new byte[BufferSize];
             bool isMoreToRead = true;
 
-            using (FileStream fileStream = new(destinationFilePath, FileMode.Create, FileAccess.Write, FileShare.None, BufferSize, true))
+            using (FileStream fileStream = new(this.destinationFilePath, FileMode.Create, FileAccess.Write, FileShare.None, BufferSize, true))
             {
                 do
                 {
