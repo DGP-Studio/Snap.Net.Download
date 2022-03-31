@@ -6,26 +6,39 @@ using System.Threading.Tasks;
 
 namespace Snap.Net.Download
 {
+    /// <summary>
+    /// 单线程下载器
+    /// </summary>
     public class Downloader
     {
         private const int BufferSize = 8192;
+
+        private static readonly Lazy<HttpClient> LazyHttpClient = new(() => new() { Timeout = Timeout.InfiniteTimeSpan });
+
         private readonly Uri downloadUrl;
         private readonly string destinationFilePath;
 
-        // HttpClient is intended to be instantiated once per application, rather than per-use.
-        private static readonly Lazy<HttpClient> LazyHttpClient = new(() => new() { Timeout = Timeout.InfiniteTimeSpan });
-
+        /// <summary>
+        /// 构造一个新的单线程下载器
+        /// </summary>
+        /// <param name="uri">待下载的uri</param>
+        /// <param name="destinationFilePath">保存的文件位置</param>
         public Downloader(Uri uri, string destinationFilePath)
         {
-            this.downloadUrl = uri;
+            downloadUrl = uri;
             this.destinationFilePath = destinationFilePath;
         }
 
+        /// <summary>
+        /// 异步的下载文件
+        /// </summary>
+        /// <param name="progress">进度</param>
+        /// <returns>任务</returns>
         public async Task DownloadAsync(IProgress<DownloadInfomation> progress)
         {
-            using (HttpResponseMessage response = await LazyHttpClient.Value.GetAsync(this.downloadUrl, HttpCompletionOption.ResponseHeadersRead))
+            using (HttpResponseMessage response = await LazyHttpClient.Value.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
             {
-                await this.DownloadFileFromHttpResponseMessageAsync(response, progress);
+                await DownloadFileFromHttpResponseMessageAsync(response, progress);
             }
         }
 
@@ -37,18 +50,18 @@ namespace Snap.Net.Download
 
             using (Stream contentStream = await response.Content.ReadAsStreamAsync())
             {
-                await this.ProcessContentStream(contentStream, totalBytes, progress);
+                await ProcessContentStreamAsync(contentStream, totalBytes, progress);
             }
         }
 
-        private async Task ProcessContentStream(Stream contentStream, long? totalDownloadSize, IProgress<DownloadInfomation> progress)
+        private async Task ProcessContentStreamAsync(Stream contentStream, long? totalDownloadSize, IProgress<DownloadInfomation> progress)
         {
             long totalBytesRead = 0L;
             long readCount = 0L;
             byte[] buffer = new byte[BufferSize];
             bool isMoreToRead = true;
 
-            using (FileStream fileStream = new(this.destinationFilePath, FileMode.Create, FileAccess.Write, FileShare.None, BufferSize, true))
+            using (FileStream fileStream = new(destinationFilePath, FileMode.Create, FileAccess.Write, FileShare.None, BufferSize, true))
             {
                 do
                 {
